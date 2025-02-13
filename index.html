@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cornell Notes</title>
+<style>
+body {
+  font-family: sans-serif;
+  margin: 0;
+}.container {
+  display: flex;
+}
+
+nav {
+  width: 250px;
+  background-color: #f0f0f0;
+  height: 100vh;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+}
+
+nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+nav li a {
+  display: block;
+  padding: 10px;
+  text-decoration: none;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  cursor: pointer;
+}
+
+nav li a:hover {
+  background-color: #ddd;
+}
+
+nav ul ul {
+  padding-left: 20px;
+}.content {
+  padding: 20px;
+  flex-grow: 1;
+}.note-section {
+  display: none;
+}.note-section.active {
+  display: block;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <nav>
+    <ul>
+      <li><a onclick="showNotes('section1')">Section 1</a>
+        <ul>
+          <li><a onclick="showNotes('section1-1')">Subsection 1.1</a></li>
+          <li><a onclick="showNotes('section1-2')">Subsection 1.2</a></li>
+        </ul>
+      </li>
+      <li><a onclick="showNotes('section2')">Section 2</a></li>
+      <li><a onclick="showNotes('section3')">Section 3</a></li>
+    </ul>
+  </nav>
+
+  <div class="content">
+    <div id="section1" class="note-section">
+      <h2>Section 1 Notes</h2>
+      <p>These are the notes for Section 1.</p>
+    </div>
+
+    <div id="section1-1" class="note-section">
+      <h2>Subsection 1.1 Notes</h2>
+      <p>These are the notes for Subsection 1.1.</p>
+    </div>
+
+    <div id="section1-2" class="note-section">
+      <h2>Subsection 1.2 Notes</h2>
+      <p>These are the notes for Subsection 1.2.</p>
+    </div>
+
+    <div id="section2" class="note-section">
+      <h2>Section 2 Notes</h2>
+      <p>These are the notes for Section 2.</p>
+    </div>
+
+    <div id="section3" class="note-section">
+      <h2>Section 3 Notes</h2>
+      <p>These are the notes for Section 3.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function showNotes(sectionId) {
+  // Hide all note sections
+  var noteSections = document.querySelectorAll('.note-section');
+  noteSections.forEach(function(section) {
+    section.classList.remove('active');
+  });
+
+  // Show the selected note section
+  var activeSection = document.getElementById(sectionId);
+  activeSection.classList.add('active');
+}
+</script>
+
+</body>
+</html>
