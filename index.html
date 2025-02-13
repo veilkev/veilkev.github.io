@@ -1,111 +1,232 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="h-full bg-gray-50">
 <head>
-<title>Cornell Notes</title>
-<style>
-body {
-  font-family: sans-serif;
-  margin: 0;
-}.container {
-  display: flex;
-}
-
-nav {
-  width: 250px;
-  background-color: #f0f0f0;
-  height: 100vh;
-  overflow-y: auto;
-  position: sticky;
-  top: 0;
-}
-
-nav ul {
-  list-style: none;
-  padding: 0;
-}
-
-nav li a {
-  display: block;
-  padding: 10px;
-  text-decoration: none;
-  color: #333;
-  border-bottom: 1px solid #ddd;
-  cursor: pointer;
-}
-
-nav li a:hover {
-  background-color: #ddd;
-}
-
-nav ul ul {
-  padding-left: 20px;
-}.content {
-  padding: 20px;
-  flex-grow: 1;
-}.note-section {
-  display: none;
-}.note-section.active {
-  display: block;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Cornell Notes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .nested-nav {
+            margin-left: 1.5rem;
+        }
+        .entry-content {
+            display: none;
+        }
+        .entry-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .arrow {
+            transition: transform 0.2s ease;
+        }
+        .arrow.expanded {
+            transform: rotate(90deg);
+        }
+    </style>
 </head>
-<body>
+<body class="h-full">
+    <div id="app" class="flex h-full" x-data="notesApp()">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-xl font-semibold">Notes</h1>
+                    <button @click="addEntry(null)" 
+                            class="p-1 rounded-full hover:bg-gray-100">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <nav class="p-4" id="navigation">
+                <template x-for="entry in entries" :key="entry.id">
+                    <div>
+                        <div class="entry-item flex items-center group">
+                            <button @click="toggleExpand(entry)" 
+                                    class="mr-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                <svg class="w-4 h-4 arrow" 
+                                     :class="{ 'expanded': entry.expanded }"
+                                     fill="none" 
+                                     stroke="currentColor" 
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" 
+                                          stroke-linejoin="round" 
+                                          stroke-width="2" 
+                                          d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                            <button @click="selectEntry(entry)" 
+                                    class="flex-grow py-2 px-2 text-left rounded hover:bg-gray-100"
+                                    :class="{ 'bg-blue-50 text-blue-600': selectedEntry?.id === entry.id }">
+                                <span x-text="entry.title"></span>
+                            </button>
+                            <button @click="addEntry(entry)" 
+                                    class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div x-show="entry.expanded" 
+                             x-transition:enter="transition-all ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform -translate-y-2"
+                             x-transition:enter-end="opacity-100 transform translate-y-0"
+                             class="nested-nav">
+                            <template x-for="child in entry.children" :key="child.id">
+                                <div class="entry-item flex items-center group">
+                                    <button @click="toggleExpand(child)" 
+                                            class="mr-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                        <svg class="w-4 h-4 arrow" 
+                                             :class="{ 'expanded': child.expanded }"
+                                             fill="none" 
+                                             stroke="currentColor" 
+                                             viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" 
+                                                  stroke-linejoin="round" 
+                                                  stroke-width="2" 
+                                                  d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                    </button>
+                                    <button @click="selectEntry(child)" 
+                                            class="flex-grow py-2 px-2 text-left rounded hover:bg-gray-100"
+                                            :class="{ 'bg-blue-50 text-blue-600': selectedEntry?.id === child.id }">
+                                        <span x-text="child.title"></span>
+                                    </button>
+                                    <button @click="addEntry(child)" 
+                                            class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </nav>
+        </div>
 
-<div class="container">
-  <nav>
-    <ul>
-      <li><a onclick="showNotes('section1')">Section 1</a>
-        <ul>
-          <li><a onclick="showNotes('section1-1')">Subsection 1.1</a></li>
-          <li><a onclick="showNotes('section1-2')">Subsection 1.2</a></li>
-        </ul>
-      </li>
-      <li><a onclick="showNotes('section2')">Section 2</a></li>
-      <li><a onclick="showNotes('section3')">Section 3</a></li>
-    </ul>
-  </nav>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col">
+            <template x-if="selectedEntry">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center space-x-4">
+                            <input type="text" 
+                                   x-model="selectedEntry.title" 
+                                   class="text-2xl font-semibold bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none"
+                                   @change="saveEntries()">
+                        </div>
+                        <div class="flex space-x-2">
+                            <button @click="isEditing = !isEditing" 
+                                    class="px-4 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50">
+                                <span x-text="isEditing ? 'Preview' : 'Edit'"></span>
+                            </button>
+                            <button @click="saveEntries()" 
+                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                                Save
+                            </button>
+                        </div>
+                    </div>
 
-  <div class="content">
-    <div id="section1" class="note-section">
-      <h2>Section 1 Notes</h2>
-      <p>These are the notes for Section 1.</p>
+                    <div x-show="!isEditing" 
+                         x-html="renderMarkdown(selectedEntry.content)"
+                         class="prose max-w-none"></div>
+
+                    <textarea x-show="isEditing"
+                            x-model="selectedEntry.content"
+                            class="w-full h-[calc(100vh-200px)] p-4 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Write your notes here (Markdown supported)..."></textarea>
+                </div>
+            </template>
+
+            <template x-if="!selectedEntry">
+                <div class="flex items-center justify-center h-full">
+                    <div class="text-center">
+                        <h3 class="text-lg font-medium text-gray-900">No note selected</h3>
+                        <p class="mt-1 text-sm text-gray-500">Select a note from the sidebar or create a new one.</p>
+                    </div>
+                </div>
+            </template>
+        </div>
     </div>
 
-    <div id="section1-1" class="note-section">
-      <h2>Subsection 1.1 Notes</h2>
-      <p>These are the notes for Subsection 1.1.</p>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.5/cdn.min.js"></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('notesApp', () => ({
+                entries: [],
+                selectedEntry: null,
+                isEditing: false,
 
-    <div id="section1-2" class="note-section">
-      <h2>Subsection 1.2 Notes</h2>
-      <p>These are the notes for Subsection 1.2.</p>
-    </div>
+                init() {
+                    this.loadEntries();
+                    // Auto-save every 30 seconds
+                    setInterval(() => this.saveEntries(), 30000);
+                },
 
-    <div id="section2" class="note-section">
-      <h2>Section 2 Notes</h2>
-      <p>These are the notes for Section 2.</p>
-    </div>
+                loadEntries() {
+                    const savedEntries = localStorage.getItem('cornellNotes');
+                    this.entries = savedEntries ? JSON.parse(savedEntries) : [
+                        {
+                            id: 'root1',
+                            title: 'Getting Started',
+                            content: '# Welcome to Cornell Notes\n\nClick the + button to add new entries.',
+                            expanded: true,
+                            children: []
+                        }
+                    ];
+                },
 
-    <div id="section3" class="note-section">
-      <h2>Section 3 Notes</h2>
-      <p>These are the notes for Section 3.</p>
-    </div>
-  </div>
-</div>
+                saveEntries() {
+                    localStorage.setItem('cornellNotes', JSON.stringify(this.entries));
+                },
 
-<script>
-function showNotes(sectionId) {
-  // Hide all note sections
-  var noteSections = document.querySelectorAll('.note-section');
-  noteSections.forEach(function(section) {
-    section.classList.remove('active');
-  });
+                toggleExpand(entry) {
+                    entry.expanded = !entry.expanded;
+                    this.saveEntries();
+                },
 
-  // Show the selected note section
-  var activeSection = document.getElementById(sectionId);
-  activeSection.classList.add('active');
-}
-</script>
+                selectEntry(entry) {
+                    this.selectedEntry = entry;
+                },
 
+                renderMarkdown(content) {
+                    if (!content) return '';
+                    return DOMPurify.sanitize(marked.parse(content));
+                },
+
+                addEntry(parent) {
+                    const newEntry = {
+                        id: `entry-${Date.now()}`,
+                        title: 'New Entry',
+                        content: '# New Entry\n\nStart writing your notes here...',
+                        expanded: true,
+                        children: []
+                    };
+
+                    if (parent) {
+                        if (!parent.children) parent.children = [];
+                        parent.children.push(newEntry);
+                        parent.expanded = true;
+                    } else {
+                        this.entries.push(newEntry);
+                    }
+
+                    this.saveEntries();
+                    this.selectEntry(newEntry);
+                }
+            }));
+        });
+    </script>
 </body>
 </html>
